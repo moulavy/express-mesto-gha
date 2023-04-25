@@ -1,3 +1,4 @@
+
 const Card = require('../models/card');
 const { SUCCESS_CODE,
   BAD_REQUEST_CODE,
@@ -9,10 +10,10 @@ module.exports.createCard = (req, res) => {
   const userId = req.user._id;
   Card.create({ name, link, owner: userId })
     .then((card) => {
-      res.send({ data: card });
+      res.status(SUCCESS_CODE).send({ data: card });
     })
     .catch((err) => {
-      if (err.name === "ValidationName" || err.name === "CastError") {
+      if (err.name === "ValidationError" || err.name === "CastError") {
         res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некорректные данные при создании карточки.' })
       }
       else {
@@ -23,7 +24,7 @@ module.exports.createCard = (req, res) => {
 
 module.exports.getCards = (req, res) => {
   Card.find({})
-    .then((cards) => res.send(cards))
+    .then((cards) => res.status(SUCCESS_CODE).send(cards))
     .catch((err) => res.status(SERVER_ERROR_CODE).send({ message: `При получении карточки произошла ошибка по умолчанию: ${err}` }))
 }
 
@@ -32,7 +33,7 @@ module.exports.deleteCard = (req, res) => {
     .orFail(() => {
       throw new Error("Not found.")
     })
-    .then(card => res.send({ data: card }))
+    .then(card => res.status(SUCCESS_CODE).send({ data: card }))
     .catch((err) => {
       if (err.name === "CastError" || err.name === 'ValidationError') {
         res.status(BAD_REQUEST_CODE).send({ message: "Переданы некоректные данные при удалении карточки по id" })
@@ -54,7 +55,7 @@ module.exports.likeCard = (req, res) => Card.findByIdAndUpdate(
   .orFail(() => {
     throw new Error("Not found.")
   })
-  .then((card) => { res.send({ card }) })
+  .then((card) => { res.status(SUCCESS_CODE).send({ card }) })
   .catch((err) => {
     if (err.name === "CastError" || err.name === 'ValidationError') {
       res.status(BAD_REQUEST_CODE).send({ message: "Переданы некорректные данные при лайке карточки по id" })
@@ -74,7 +75,7 @@ module.exports.dislikeCard = (req, res) => Card.findByIdAndUpdate(
   .orFail(() => {
     throw new Error("Not found.")
   })
-  .then((card) => { res.send({ card }) })
+  .then((card) => { res.status(SUCCESS_CODE).send({ card }) })
   .catch((err) => {
     if (err.name === "CastError" || err.name === 'ValidationError') {
       res.status(BAD_REQUEST_CODE).send({ message: "Переданы некорректные данные при дизлайке карточки по id" })

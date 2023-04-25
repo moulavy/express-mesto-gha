@@ -16,7 +16,7 @@ module.exports.createCard = (req, res) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
         res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некорректные данные при создании карточки.' });
       } else {
-        res.status(SERVER_ERROR_CODE).send({ message: `При создании карточки возникла ошибка по умолчанию: ${err}` });
+        res.status(SERVER_ERROR_CODE).send({ message: 'При создании карточки произошла ошибка по умолчанию.' });
       }
     });
 };
@@ -24,22 +24,20 @@ module.exports.createCard = (req, res) => {
 module.exports.getCards = (req, res) => {
   Card.find({})
     .then((cards) => res.send(cards))
-    .catch((err) => res.status(SERVER_ERROR_CODE).send({ message: `При получении карточки произошла ошибка по умолчанию: ${err}` }));
+    .catch(() => res.status(SERVER_ERROR_CODE).send({ message: 'При получении карточки произошла ошибка по умолчанию.' }));
 };
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .orFail(() => {
-      throw new Error('Not found.');
-    })
+    .orFail()
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
+      if (err.name === 'CastError') {
         res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некоректные данные при удалении карточки по id' });
-      } else if (err.message === 'Not found.') {
+      } else if (err.name === 'DocumentNotFoundError') {
         res.status(NOT_FOUND_CODE).send({ message: 'Карточка по указанному id не найдена' });
       } else {
-        res.status(SERVER_ERROR_CODE).send({ message: `Произошла ошибка по умолчанию ${err}` });
+        res.status(SERVER_ERROR_CODE).send({ message: 'При удалении карточки произошла ошибка по умолчанию.' });
       }
     });
 };
@@ -49,17 +47,15 @@ module.exports.likeCard = (req, res) => Card.findByIdAndUpdate(
   { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
   { new: true, runValidators: true },
 )
-  .orFail(() => {
-    throw new Error('Not found.');
-  })
+  .orFail()
   .then((card) => { res.send({ card }); })
   .catch((err) => {
-    if (err.name === 'CastError' || err.name === 'ValidationError') {
+    if (err.name === 'CastError') {
       res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некорректные данные при лайке карточки по id' });
-    } else if (err.message === 'Not found.') {
+    } else if (err.name === 'DocumentNotFoundError') {
       res.status(NOT_FOUND_CODE).send({ message: 'Карточка по указанному id не найдена' });
     } else {
-      res.status(SERVER_ERROR_CODE).send({ message: `Произошла ошибка по умолчанию ${err}` });
+      res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
     }
   });
 
@@ -68,16 +64,14 @@ module.exports.dislikeCard = (req, res) => Card.findByIdAndUpdate(
   { $pull: { likes: req.user._id } }, // убрать _id из массива
   { new: true },
 )
-  .orFail(() => {
-    throw new Error('Not found.');
-  })
+  .orFail()
   .then((card) => { res.send({ card }); })
   .catch((err) => {
-    if (err.name === 'CastError' || err.name === 'ValidationError') {
+    if (err.name === 'CastError') {
       res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некорректные данные при дизлайке карточки по id' });
-    } else if (err.message === 'Not found.') {
+    } else if (err.name === 'DocumentNotFoundError') {
       res.status(NOT_FOUND_CODE).send({ message: 'Карточка по указанному id не найдена' });
     } else {
-      res.status(SERVER_ERROR_CODE).send({ message: `Произошла ошибка по умолчанию ${err}` });
+      res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
     }
   });

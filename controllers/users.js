@@ -1,6 +1,5 @@
 const User = require('../models/user');
 const {
-  SUCCESS_CODE,
   BAD_REQUEST_CODE,
   NOT_FOUND_CODE,
   SERVER_ERROR_CODE,

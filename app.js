@@ -15,23 +15,16 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '644668f523830ac753f78c53',
-  };
-
-  next();
-});
 app.post('/signin', login);
 app.post('/signup', createUser);
-app.use('*', (req, res) => {
-  res.status(NOT_FOUND_CODE).send({ message: 'Cтраницы не существует' });
-});
+
 app.use(auth);
 
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
-
+app.use('*', (req, res) => {
+  res.status(NOT_FOUND_CODE).send({ message: 'Cтраницы не существует' });
+});
 
 
 app.listen(PORT);

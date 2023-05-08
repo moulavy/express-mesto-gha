@@ -25,11 +25,12 @@ module.exports.createUser = (req, res) => {
 };
 
 module.exports.login = (req, res) => {
+  console.log('запрос на авторизацию пришел');
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'secret-key',{expiresIn:'7d'});
-      res.send(token);
+      const token = jwt.sign({ _id: user._id }, '1234567890-tg',{expiresIn:'7d'});
+      res.send({ token });
     })
     .catch((err) => {
       res.status(UNAUTHORIZED_CODE).send({ message: err.message })
@@ -41,6 +42,26 @@ module.exports.getUsers = (req, res) => {
     .then((users) => res.send(users))
     .catch(() => res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' }));
 };
+
+module.exports.getInfoUser = (req, res) => {
+  console.log('Пришел запрос на получение текущего юзера');
+  const { _id } = req.user;
+  User.findById(_id)
+    .then((user) => {
+      if (!user) {
+        res.status(NOT_FOUND_CODE).send({ message: 'Пользователь по указанному id не найден' });
+      }
+      res.send({ data: user });
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некоректные данные при получении пользователя по id при текущем пользователе' });
+      }
+      else {
+        res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
+      }
+  })
+}
 
 
 module.exports.getUserById = (req, res) => {

@@ -1,9 +1,11 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const {
   BAD_REQUEST_CODE,
   NOT_FOUND_CODE,
   SERVER_ERROR_CODE,
+  UNAUTHORIZED_CODE
 } = require('../utils/constans');
 
 module.exports.createUser = (req, res) => {
@@ -22,11 +24,24 @@ module.exports.createUser = (req, res) => {
     });
 };
 
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'secret-key',{expiresIn:'7d'});
+      res.send(token);
+    })
+    .catch((err) => {
+      res.status(UNAUTHORIZED_CODE).send({ message: err.message })
+    });
+}
+
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((users) => res.send(users))
     .catch(() => res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' }));
 };
+
 
 module.exports.getUserById = (req, res) => {
   User.findById(req.params.userId)

@@ -10,12 +10,6 @@ const userSchema = new mongoose.Schema({
     unique: true,
     validate: [validator.isEmail, 'Неправильный формат email.'],
   },
-  password: {
-    type: String,
-    required: true,
-    minlength: 8,
-    select: false,
-  },
   name: {
     type: String,
     minlength: 2,
@@ -32,7 +26,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
-});
+  password: {
+    type: String,
+    required: true,
+    select: false,
+  },
+},
+  { toJSON: { useProjection: true }, toObject: { useProjection: true } }
+);
+
 
 userSchema.statics.findUserByCredentials = function (email, password, next) {
   return this.findOne({ email }).select('+password')
@@ -46,8 +48,10 @@ userSchema.statics.findUserByCredentials = function (email, password, next) {
             next(new UnauthorizedError('Неправильные почта или пароль'));
           }
           return user;
-        });
-    });
+        })
+        .catch(next);
+    })
+    .catch(next);
 };
 
 module.exports = mongoose.model('user', userSchema);

@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const { SERVER_ERROR_CODE } = require('./utils/constans');
+const { SERVER_ERROR_CODE, NOT_FOUND_CODE } = require('./utils/constans');
 const { login, createUser } = require('./controllers/users');
 const auth = require('./middlewares/auth');
 const { celebrate, Joi, errors } = require('celebrate');
@@ -16,8 +16,6 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(errors());
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -43,6 +41,8 @@ app.use('/cards', require('./routes/cards'));
 app.use('*', (req, res) => {
   res.status(NOT_FOUND_CODE).send({ message: 'Cтраницы не существует' });
 });
+
+app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = SERVER_ERROR_CODE, message } = err;

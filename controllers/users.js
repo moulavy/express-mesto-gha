@@ -1,14 +1,14 @@
-const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const {
-  BAD_REQUEST_CODE,
-  NOT_FOUND_CODE,
-  SERVER_ERROR_CODE,
-  UNAUTHORIZED_CODE
-} = require('../utils/constans');
 
-module.exports.createUser = (req, res) => {
+const NotFoundError = require('../errors/NotFoundError');
+const BadRequestError = require('../errors/BadRequestError');
+const UnauthorizedError = require('../errors/UnauthorizedError');
+const ConflictError = require('../errors/ConflictError');
+
+const User = require('../models/user');
+
+module.exports.createUser = (req, res, next) => {
   const { name, about, avatar, email, password } = req.body;
   bcrypt.hash(password, 10)
     .then(hash=>User.create({ name, about, avatar,email,password:hash }))
@@ -17,14 +17,18 @@ module.exports.createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некорректные данные при создании пользователя.' });
-      } else {
-        res.status(SERVER_ERROR_CODE).send({ message: 'При создании профиля произошла ошибка по умолчанию.' });
+        next(new BadRequestError('Переданы некорректные данные при создании пользователя.'));
+      }
+      else if (err.code === 11000) {
+        next(new ConflictError('Пользователь с таким email уже существует'))
+      }
+      else {
+        next(err);
       }
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res,next) => {
   console.log('запрос на авторизацию пришел');
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
@@ -33,80 +37,80 @@ module.exports.login = (req, res) => {
       res.send({ token });
     })
     .catch((err) => {
-      res.status(UNAUTHORIZED_CODE).send({ message: err.message })
+      next(new UnauthorizedError('Ошибка при авторизации. Отказано в доступе.'))
     });
 }
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res,next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' }));
+    .catch(next);
 };
 
-module.exports.getInfoUser = (req, res) => {
+module.exports.getInfoUser = (req, res, next) => {
   console.log('Пришел запрос на получение текущего юзера');
   const { _id } = req.user;
   User.findById(_id)
     .then((user) => {
       if (!user) {
-        res.status(NOT_FOUND_CODE).send({ message: 'Пользователь по указанному id не найден' });
+        next(new NotFoundError('Пользователь по указанному id не найден'));
       }
       res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некоректные данные при получении пользователя по id при текущем пользователе' });
-      }
-      else {
-        res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
+        next(new BadRequestError('Переданы некоректные данные при получении пользователя по id при текущем пользователе.'));
+      } else if (err.name === 'DocumentNotFoundError') {
+        next(new NotFoundError('Пользователь по указанному id не найден'));
+      } else {
+        next(err);
       }
   })
 }
 
-
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(BAD_REQUEST_CODE).send({ message: 'Переданы некоректные данные при получении пользователя по id' });
+        next(new BadRequestError('Переданы некоректные данные при получении пользователя по id.'));
       } else if (err.name === 'DocumentNotFoundError') {
-        res.status(NOT_FOUND_CODE).send({ message: 'Пользователь по указанному id не найден' });
+        next(new NotFoundError('Пользователь по указанному id не найден'));
       } else {
-        res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
+        next(err);
       }
     });
 };
 
-module.exports.updateUserInfo = (req, res) => {
+module.exports.updateUserInfo = (req, res, next) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(BAD_REQUEST_CODE).send({ message: 'При обновлении информации пользователя переданы некорректные данные' });
+        next(new BadRequestError('При обновлении информации пользователя переданы некорректные данные' ));
       } else if (err.name === 'DocumentNotFoundError') {
-        res.status(NOT_FOUND_CODE).send({ message: 'Пользователь с указанным id не найден.' });
+        next(new NotFoundError('Пользователь по указанному id не найден'));
       } else {
-        res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
+        next(err);
       }
     });
 };
 
-module.exports.updateUserAvatar = (req, res) => {
+module.exports.updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(BAD_REQUEST_CODE).send({ message: 'При обновлении аватара пользователя переданы некорректные данные' });
+        next(new BadRequestError('При обновлении аватара пользователя переданы некорректные данные'));
       } else if (err.name === 'DocumentNotFoundError') {
-        res.status(NOT_FOUND_CODE).send({ message: 'Пользователь с указанным id не найден.' });
+        next(new NotFoundError('Пользователь по указанному id не найден'));
       } else {
-        res.status(SERVER_ERROR_CODE).send({ message: 'Произошла ошибка по умолчанию' });
+        next(err);
       }
     });
 };

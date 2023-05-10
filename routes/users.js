@@ -8,9 +8,9 @@ router.get('/', getUsers);
 router.get('/me', getInfoUser);
 router.get('/:userId', celebrate({
   params: Joi.object().keys({
-    userId:Joi.string().hex().length(24).required()
-  })
-}),getUserById);
+    userId: Joi.string().hex().length(24).required(),
+  }),
+}), getUserById);
 
 router.patch('/me', celebrate({
   body: Joi.object().keys({

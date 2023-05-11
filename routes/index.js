@@ -3,10 +3,11 @@ const router = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
 const { login, createUser } = require('../controllers/users');
 const auth = require('../middlewares/auth');
-const { NotFoundError } = require('../errors/NotFoundError');
+
 const regexURL = require('../utils/regex');
 const userRouter = require('./users');
 const cardRouter = require('./cards');
+const NotFoundError = require('../errors/NotFoundError');
 
 router.post('/signin', celebrate({
   body: Joi.object().keys({

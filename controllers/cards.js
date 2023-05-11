@@ -36,16 +36,9 @@ module.exports.deleteCard = (req, res, next) => {
       }
       return Card.findByIdAndRemove(req.params.cardId)
         .then((cardDel) => res.send({ data: cardDel }))
-        .catch((err) => {
-          if (err.name === 'CastError') {
-            next(new BadRequestError('Переданы некоректные данные при удалении карточки по id'));
-          } else if (err.name === 'DocumentNotFoundError') {
-            next(new NotFoundError('Карточка по указанному id не найдена'));
-          } else {
-            next(err);
-          }
-        });
-    });
+        .catch(next);
+    })
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => Card.findByIdAndUpdate(

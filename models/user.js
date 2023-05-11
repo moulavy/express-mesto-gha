@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
+      validate: {
+        validator: (value) => validator.isURL(value),
+        message: 'Неправильный формат ссылки.',
+      },
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     },
     password: {
@@ -36,22 +40,20 @@ const userSchema = new mongoose.Schema(
   { toJSON: { useProjection: true }, toObject: { useProjection: true } },
 );
 
-userSchema.statics.findUserByCredentials = function (email, password, next) {
+userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        next(new UnauthorizedError('Неправильные почта или пароль'));
+        throw new UnauthorizedError('Неправильные почта или пароль');
       }
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            next(new UnauthorizedError('Неправильные почта или пароль'));
+            throw new UnauthorizedError('Неправильные почта или пароль');
           }
           return user;
-        })
-        .catch(next);
-    })
-    .catch(next);
+        });
+    });
 };
 
 module.exports = mongoose.model('user', userSchema);

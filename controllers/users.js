@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequestError = require('../errors/BadRequestError');
-const UnauthorizedError = require('../errors/UnauthorizedError');
 const ConflictError = require('../errors/ConflictError');
 
 const User = require('../models/user');
@@ -37,9 +36,7 @@ module.exports.login = (req, res, next) => {
       const token = jwt.sign({ _id: user._id }, '1234567890-tg', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch(() => {
-      next(new UnauthorizedError('Ошибка при авторизации. Отказано в доступе.'));
-    });
+    .catch(next);
 };
 
 module.exports.getUsers = (req, res, next) => {
@@ -53,9 +50,9 @@ module.exports.getInfoUser = (req, res, next) => {
   User.findById(_id)
     .then((user) => {
       if (!user) {
-        next(new NotFoundError('Пользователь по указанному id не найден'));
+        return next(new NotFoundError('Пользователь по указанному id не найден'));
       }
-      res.send({ data: user });
+      return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
